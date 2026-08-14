@@ -1,0 +1,50 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+pip-wheel-metadata/
+
+# Build output
+build/
+dist/
+installer_output/
+*.spec
+app.exe
+lumicontroll.exe
+viewer.exe
+
+# Local runtime data
+adm.config
+settings.config
+sound_settings.json
+scenes.config
+*.broken-*
+
+# Local/development shows
+shows/
+
+# Installer defaults are intentionally committed
+!installer_defaults/
+!installer_defaults/**
+!installer_defaults/adm.config
+!installer_defaults/settings.config
+!installer_defaults/sound_settings.json
+!installer_defaults/shows/
+!installer_defaults/shows/**
+
+# Logs and local test output
+*.log
+artnet_network_test_result.txt
+takenlijst artnetcontroller.txt
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/

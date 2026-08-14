@@ -1,0 +1,33 @@
+LumiControLL Non-Commercial License
+
+Copyright (c) 2026 Lesley Lemmens
+
+LumiControLL may be used free of charge for personal, educational, and
+non-profit purposes.
+
+Commercial use is not permitted without prior written permission from Lesley
+Lemmens.
+
+You may not publish, distribute, or make available modified versions, forks, or
+derivative works of LumiControLL as separate products or under another name.
+
+You may create modifications, fixes, translations, or updates only for the
+purpose of contributing them back to the original LumiControLL project. Any
+such contributions may be reviewed, changed, accepted, or rejected by Lesley
+Lemmens at his sole discretion.
+
+By submitting a contribution to LumiControLL, you grant Lesley Lemmens
+permission to use, modify, publish, and distribute that contribution as part of
+LumiControLL.
+
+Accepted contributions may be included in official LumiControLL releases and
+distributed by Lesley Lemmens as part of the original product.
+
+Redistribution of the unmodified official installer is permitted only with
+attribution and a link to the official LumiControLL release page.
+
+Third-party components included with LumiControLL remain subject to their own
+licenses.
+
+LumiControLL is provided "as is", without warranty of any kind. Lesley Lemmens
+is not liable for any damages or losses arising from the use of LumiControLL.

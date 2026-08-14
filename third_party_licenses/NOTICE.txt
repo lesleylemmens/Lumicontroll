@@ -1,0 +1,39 @@
+Third-party software notice
+===========================
+
+This distribution may include Zadig, a USB driver installation utility.
+
+Zadig
+-----
+Name: Zadig
+Included file: zadig-2.9.exe
+Copyright: Copyright (c) 2010-2025 Pete Batard / Akeo
+License: GNU General Public License (GPL), version 3 or later
+Official website: https://zadig.akeo.ie/
+Source code: https://github.com/pbatard/libwdi
+
+Zadig is included only as a separate third-party executable for driver
+installation convenience. LumiControLL is not derived from Zadig.
+
+libwdi
+------
+Zadig is based on libwdi.
+Copyright: Copyright (c) 2010-2025 Pete Batard et al.
+License: GNU Lesser General Public License (LGPL), version 3 or later
+Source code: https://github.com/pbatard/libwdi
+
+stupidArtnet
+------------
+Name: stupidArtnet
+Version: 1.6.0
+Copyright: Copyright (c) 2018 Carlos Valente
+Author: cpvalente
+License: MIT License
+Source code: https://github.com/cpvalente/stupidArtnet
+
+License texts
+-------------
+See:
+- Zadig-GPL-3.0.txt
+- libwdi-LGPL-3.0.txt
+- stupidArtnet-MIT.txt

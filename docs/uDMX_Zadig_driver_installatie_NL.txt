@@ -1,0 +1,54 @@
+uDMX driver installeren met Zadig
+=================================
+
+Gebruik dit alleen als LumiControLL de uDMX dongle niet kan openen.
+Zadig verandert de driver van het geselecteerde USB-apparaat. Kies dus
+alleen de uDMX dongle en niet bijvoorbeeld je muis, toetsenbord, audio-
+interface, USB-hub of opslagapparaat.
+
+Stappen
+-------
+
+1. Sluit de uDMX dongle aan op de computer.
+
+2. Start zadig-2.9.exe.
+   Dit bestand staat in de LumiControLL-programmamap, naast lumicontroll.exe.
+   Als Windows om toestemming vraagt, kies Ja.
+
+3. Ga in Zadig naar Options en zet List All Devices aan.
+
+4. Kies in de keuzelijst de uDMX dongle.
+   De naam kan verschillen per dongle. Controleer dit zorgvuldig. Trek bij
+   twijfel de dongle even uit en steek hem opnieuw in om te zien welk apparaat
+   verdwijnt en terugkomt.
+
+5. Kies rechts bij de nieuwe driver eerst libusbK.
+   Werkt dat niet, probeer daarna WinUSB of libusb-win32.
+
+6. Klik Install Driver of Replace Driver.
+   Dit kan enkele minuten duren.
+
+7. Sluit Zadig, trek de uDMX dongle los en sluit hem opnieuw aan.
+
+8. Start LumiControLL opnieuw en kies Output Settings > USB of Both.
+
+Let op
+------
+
+- Windows koppelt USB-drivers vaak per apparaat/USB-poort. Als je de dongle
+  later in een andere USB-poort steekt, kan het nodig zijn deze stappen opnieuw
+  te doen.
+- Als LumiControLL de dongle nog niet ziet, probeer een andere USB-poort en
+  start de app opnieuw.
+- Als je per ongeluk het verkeerde apparaat hebt aangepast, open Apparaatbeheer,
+  zoek het apparaat, kies Apparaat verwijderen en vink eventueel
+  Driver software verwijderen aan. Sluit het apparaat daarna opnieuw aan.
+
+Bronnen
+-------
+
+Zadig:
+https://zadig.akeo.ie/
+
+uDMX driverinformatie:
+https://www.illutzmination.de/udmxdriver.1.html?L=1

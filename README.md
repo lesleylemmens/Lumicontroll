@@ -1,0 +1,126 @@
+# LumiControLL
+
+LumiControLL is a Windows lighting control application for Art-Net and uDMX output.
+
+It is designed for simple live control of DMX lights, with support for show pages, chases, audio-triggered playback, Art-Net output, and uDMX USB dongles.
+
+## Download
+
+Download the latest installer from the GitHub Releases page:
+
+[Download the latest LumiControLL release](../../releases/latest)
+
+The installer is named:
+
+```text
+lumicontroll setup.exe
+```
+
+## Quick Start
+
+1. Install LumiControLL with `lumicontroll setup.exe`.
+2. Start LumiControLL from the desktop shortcut or Start Menu.
+3. Use **Output Settings** to choose Art-Net, USB (uDMX), or both.
+4. For uDMX dongles, use the included Zadig guide from **Output Settings > uDMX dongle installeren**.
+
+## Locked Mode And Admin Mode
+
+LumiControLL starts in locked mode by default.
+
+Use this shortcut to toggle admin mode:
+
+```text
+Alt + Shift + S
+```
+
+Admin mode enables editing features such as show management, output settings, page/block editing, and the Art-Net viewer menu.
+
+## User Data
+
+Installed builds store user settings and shows in:
+
+```text
+C:\ProgramData\LumiControLL
+```
+
+During uninstall, the uninstaller asks whether this user data should also be removed.
+
+When running from source, runtime data is stored next to `app.py` for easier development.
+
+## uDMX Driver Setup
+
+The installer includes `zadig-2.9.exe` in the LumiControLL program folder.
+
+If LumiControLL cannot open a uDMX dongle, install a suitable USB driver with Zadig. The included Dutch guide explains the steps:
+
+```text
+docs/uDMX_Zadig_driver_installatie_NL.txt
+```
+
+Recommended first driver choice for uDMX is `libusbK`. If that does not work, try `WinUSB` or `libusb-win32`.
+
+## Building From Source
+
+Install Python, then install the dependencies:
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+Build the application executables:
+
+```bat
+build_app.bat
+```
+
+Build the Windows installer:
+
+```bat
+build_installer.bat
+```
+
+The installer build requires Inno Setup 6.
+
+## Repository Layout
+
+```text
+app.py                         Main LumiControLL application
+viewer.py                      Art-Net viewer
+editor.py                      Chase/scene editor
+audiodetector.py               Audio pulse detection
+udmx_backend.py                uDMX USB backend
+installer/                     Inno Setup installer definition
+installer_defaults/            Clean default settings and empty default show
+docs/                          User documentation
+third_party_licenses/          Third-party license texts and notices
+```
+
+Generated files such as `build/`, `dist/`, and `installer_output/` are not committed.
+
+## License
+
+LumiControLL is provided under the [LumiControLL Non-Commercial License](LICENSE.txt).
+
+Summary:
+
+- Free use is allowed for personal, educational, and non-profit purposes.
+- Commercial use requires prior written permission from Lesley Lemmens.
+- Modified versions, forks, or derivative works may not be published as separate products or under another name.
+- Updates and fixes may be contributed back to the original LumiControLL project.
+
+This summary is not a replacement for the full license text. See [LICENSE.txt](LICENSE.txt).
+
+## Third-Party Software
+
+This project includes or uses third-party software:
+
+- Zadig, licensed under GPLv3-or-later
+- libwdi, licensed under LGPLv3-or-later
+- stupidArtnet, licensed under MIT
+- Art-Net protocol name and specification by Artistic Licence Engineering Ltd
+
+License texts and source links are included in [third_party_licenses](third_party_licenses/).
+
+## Author
+
+LumiControLL is created by Lesley Lemmens.

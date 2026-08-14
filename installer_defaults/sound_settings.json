@@ -1,0 +1,10 @@
+{
+  "mode": "Full Peak",
+  "thr": 0.7,
+  "minint": 180,
+  "hold": 120,
+  "slope": 0.0,
+  "source_type": "input",
+  "input_device": null,
+  "input_device_name": ""
+}

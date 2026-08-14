@@ -1,0 +1,12 @@
+keyboard
+libusb-package
+numpy
+pyaudiowpatch
+pyinstaller
+pyudmx
+pyusb
+scipy
+soundcard
+sounddevice
+stupidArtnet
+

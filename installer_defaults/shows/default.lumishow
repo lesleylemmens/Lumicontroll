@@ -1,0 +1,50 @@
+{
+    "pages": [
+        {
+            "name": "Page 1",
+            "solo": false,
+            "chases": []
+        },
+        {
+            "name": "Page 2",
+            "solo": false,
+            "chases": []
+        },
+        {
+            "name": "Page 3",
+            "solo": false,
+            "chases": []
+        },
+        {
+            "name": "Page 4",
+            "solo": false,
+            "chases": []
+        }
+    ],
+    "blocks": [
+        {
+            "page": 0
+        },
+        {
+            "page": 1
+        },
+        {
+            "page": 2
+        },
+        {
+            "page": 3
+        },
+        {
+            "page": null
+        },
+        {
+            "page": null
+        },
+        {
+            "page": null
+        },
+        {
+            "page": null
+        }
+    ]
+}
