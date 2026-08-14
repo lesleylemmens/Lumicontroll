@@ -21,11 +21,9 @@ lumicontroll setup.exe
 1. Install LumiControLL with `lumicontroll setup.exe`.
 2. Start LumiControLL from the desktop shortcut or Start Menu.
 3. Use **Output Settings** to choose Art-Net, USB (uDMX), or both.
-4. For uDMX dongles, use the included Zadig guide from **Output Settings > uDMX dongle installeren**.
+4. For uDMX dongles, use the included Zadig guide from **Output Settings > Install uDMX dongle**.
 
 ## Locked Mode And Admin Mode
-
-LumiControLL starts in locked mode by default.
 
 Use this shortcut to toggle admin mode:
 

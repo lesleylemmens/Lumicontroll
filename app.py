@@ -1663,8 +1663,8 @@ def open_output_settings():
     btn_row = ttk.Frame(frm); btn_row.grid(row=5, column=0, columnspan=3, sticky="e", pady=(12,0))
     guide_btn = tk.Button(
         btn_row,
-        text="uDMX dongle installeren",
-        command=lambda: open_path(udmx_driver_guide_file, "uDMX dongle installeren"),
+        text="Install uDMX dongle",
+        command=lambda: open_path(udmx_driver_guide_file, "Install uDMX dongle"),
     )
     guide_btn.pack(side="left", padx=(0, 8))
     close_btn = tk.Button(btn_row, text="Close", width=10, command=lambda: (d.grab_release(), d.destroy()))
