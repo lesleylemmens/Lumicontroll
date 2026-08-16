@@ -3,10 +3,10 @@ libusb-package
 numpy
 pyaudiowpatch
 pyinstaller
+pyftdi
 pyudmx
 pyusb
 scipy
 soundcard
 sounddevice
 stupidArtnet
-

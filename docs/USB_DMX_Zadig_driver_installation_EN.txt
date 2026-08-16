@@ -1,0 +1,77 @@
+Installing USB DMX Drivers With Zadig
+=====================================
+
+Use this guide only when LumiControLL cannot open your USB DMX dongle.
+Be careful to select only the DMX dongle in Zadig.
+
+Important
+---------
+- uDMX and Open DMX do not use the same USB protocol.
+- In LumiControLL, first choose the correct USB type in Output Settings:
+  uDMX or Open DMX.
+- Close other DMX software before using the dongle. Most USB DMX dongles can
+  only be opened by one application at a time.
+
+Opening Zadig
+-------------
+1. Connect the DMX dongle to the computer.
+2. Start zadig-2.9.exe as administrator.
+   After a normal installation, Zadig is located here:
+
+   C:\Program Files\LumiControLL\zadig-2.9.exe
+
+   If you installed LumiControLL in a different folder, open zadig-2.9.exe
+   from that installation folder instead.
+3. Choose Options > List All Devices.
+4. Select the DMX dongle from the device list.
+   Do not select a mouse, keyboard, audio interface, or any other USB device.
+
+uDMX
+----
+1. Select the uDMX dongle.
+2. For the new driver, try libusbK first.
+3. Click Replace Driver or Install Driver.
+4. Close Zadig.
+5. Unplug the uDMX dongle and plug it in again.
+6. Start LumiControLL and choose Output Settings > uDMX.
+
+If uDMX does not open:
+- Try WinUSB or libusb-win32.
+- Try another USB port.
+- Use a short USB cable.
+- Close other DMX software.
+
+Open DMX / FTDI Clones
+----------------------
+This route is for ENTTEC Open DMX USB and FTDI-based clones.
+LumiControLL uses pyftdi through libusb for this backend, so the dongle does
+not need to be available as a COM port.
+
+1. In Zadig, select the FTDI/Open DMX device.
+   It may be named USB Serial Converter, FT232R USB UART, Open DMX USB,
+   or have a clone-specific name.
+2. Prefer libusb-win32 as the first driver choice.
+3. Click Replace Driver or Install Driver.
+4. Close Zadig.
+5. Unplug the Open DMX dongle and plug it in again.
+6. Start LumiControLL and choose Output Settings > Open DMX.
+
+If Open DMX does not open:
+- Check that you selected the FTDI/Open DMX device, not Interface 0 of another
+  USB device.
+- Try WinUSB or libusbK as an alternative driver.
+- If another application needs the dongle as a COM port, you may need to
+  restore the FTDI driver later through Device Manager or Zadig.
+- Some clones do not use an FTDI chip or behave differently; those may not
+  work with this Open DMX backend.
+
+Restoring The Original Driver
+-----------------------------
+If you selected the wrong driver, or if you want to use the dongle as a COM
+port again:
+
+1. Open Windows Device Manager.
+2. Find the USB device.
+3. Uninstall the device or update its driver.
+4. Install the original FTDI driver if needed.
+5. Unplug the dongle and plug it in again.

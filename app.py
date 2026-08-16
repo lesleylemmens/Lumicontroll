@@ -58,8 +58,9 @@ from audiodetector import (
     list_loopback_devices,
 )
 
-# ----------------- USB backend -----------------
+# ----------------- USB backends -----------------
 from udmx_backend import UDMX
+from opendmx_backend import OpenDMX
 
 # ----------------- paden & files -----------------
 script_directory = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -85,7 +86,7 @@ icon_file     = os.path.join(script_directory, "an.ico")
 adm_file      = os.path.join(data_directory, "adm.config")
 readme_file   = os.path.join(script_directory, "readme.pdf")
 third_party_licenses_dir = os.path.join(script_directory, "third_party_licenses")
-udmx_driver_guide_file = os.path.join(script_directory, "docs", "uDMX_Zadig_driver_installatie_NL.txt")
+usb_driver_guide_file = os.path.join(script_directory, "docs", "USB_DMX_Zadig_driver_installation_EN.txt")
 viewer_exe    = os.path.join(script_directory, "viewer.exe")
 viewer_py     = os.path.join(script_directory, "viewer.py")
 SHOW_EXTENSION = ".lumishow"
@@ -129,7 +130,9 @@ default_settings = {
     "node_ip": "192.168.1.100",
     "universe": 0,
     "bpm": 120,
-    "output_mode": "artnet",       # "artnet" | "usb" | "both"
+    "output_mode": "none",         # derived from usb_backend and artnet_enabled
+    "usb_backend": "none",         # "none" | "udmx" | "opendmx"
+    "artnet_enabled": False,
     # performance
     "playback_tick_ms": DEFAULT_TICK_MS,
     "usb_fps": DEFAULT_USB_FPS,
@@ -305,9 +308,22 @@ def _read_bool_setting(key, fallback):
 node_ip       = _read_setting("node_ip", "192.168.1.100")
 universe      = _read_int_setting("universe", 0, 0, 32767)
 bpm           = _read_int_setting("bpm", 120, 1, 400)
-output_mode   = str(_read_setting("output_mode", "artnet"))
-if output_mode not in ("artnet", "usb", "both"):
-    output_mode = "artnet"
+usb_backend = str(_read_setting("usb_backend", "none")).lower()
+if usb_backend not in ("none", "udmx", "opendmx"):
+    usb_backend = "none"
+artnet_enabled = _read_bool_setting("artnet_enabled", False)
+
+def _current_output_mode():
+    usb_enabled = usb_backend != "none"
+    if artnet_enabled and usb_enabled:
+        return "both"
+    if artnet_enabled:
+        return "artnet"
+    if usb_enabled:
+        return "usb"
+    return "none"
+
+output_mode = _current_output_mode()
 block_view    = str(_read_setting("block_view", "4"))
 if block_view not in ("1", "2", "3", "4", "6", "8"):
     block_view = "4"
@@ -323,13 +339,16 @@ USB_INTER_DELAY_MS  = _read_float_setting("usb_inter_delay_ms", DEFAULT_INTER_DE
 USB_ALWAYS_SEND     = _read_bool_setting("usb_always_send", DEFAULT_USB_ALWAYS_SEND)
 
 def save_settings():
-    global block_view
+    global block_view, output_mode
     usb_fps = int(round(1000.0 / max(1, USB_SEND_MIN_INTERVAL_MS)))
+    output_mode = _current_output_mode()
     cfg = {
         "node_ip": node_ip,
         "universe": universe,
         "bpm": bpm,
         "output_mode": output_mode,
+        "usb_backend": usb_backend,
+        "artnet_enabled": bool(artnet_enabled),
         "playback_tick_ms": int(PLAYBACK_TICK_MS),
         "usb_fps": usb_fps,
         "usb_chunk_size": int(USB_CHUNK_SIZE),
@@ -625,10 +644,18 @@ def _send_artnet_live(frame):
     _artnet.set(f)
     _artnet.show()
 
-# USB (uDMX) met backoff + echte stats
+def _usb_backend_label(backend):
+    if backend == "opendmx":
+        return "Open DMX"
+    if backend == "udmx":
+        return "uDMX"
+    return "None"
+
+# USB (uDMX / Open DMX) met backoff + echte stats
 class USBOut:
     def __init__(self):
-        self.dev = None               # type: UDMX|None
+        self.dev = None               # type: UDMX|OpenDMX|None
+        self.backend = None           # type: str|None
         self.last_frame = None        # type: bytes|None
         self._reconnect_job = None
         self._status_cb = None
@@ -671,30 +698,53 @@ class USBOut:
 
     def status_text(self):
         with self._lock:
-            return "USB: connected" if self.dev else "USB: not connected"
+            name = _usb_backend_label(self.backend or usb_backend)
+            return f"USB ({name}): connected" if self.dev else f"USB ({name}): not connected"
+
+    def _make_device(self, backend):
+        if backend == "opendmx":
+            return OpenDMX().open()
+        return UDMX().open()
 
     def ensure_open(self, root=None, verbose=False, force=False):
         if root is not None:
             self._root = root
+        if usb_backend == "none":
+            self.close()
+            return False
         now = _now_ms()
         with self._lock:
-            if self.dev:
+            current_backend = self.backend
+            if self.dev and current_backend == usb_backend:
                 return True
+            if self.dev and current_backend != usb_backend:
+                dev = self.dev
+                self.dev = None
+                self.backend = None
+                self.last_frame = None
+                self._pending_frame = None
+                try:
+                    dev.close()
+                except Exception:
+                    pass
         if (not force) and (now < self._open_blocked_until):
             return False
         try:
-            d = UDMX().open()
+            target_backend = usb_backend
+            d = self._make_device(target_backend)
             with self._lock:
                 self.dev = d
+                self.backend = target_backend
                 self.last_frame = None
                 self._open_blocked_until = 0
-            if verbose: print("[usb] opened")
+            if verbose: print(f"[usb] opened {_usb_backend_label(target_backend)}")
             if self._status_cb: self._status_cb()
             return True
         except Exception as e:
             if verbose: print(f"[usb] open failed: {e}")
             with self._lock:
                 self.dev = None
+                self.backend = None
                 self.last_frame = None
             # backoff
             self._open_blocked_until = now + USB_RETRY_MS
@@ -717,6 +767,7 @@ class USBOut:
             with self._lock:
                 dev = self.dev
                 self.dev = None
+                self.backend = None
                 self.last_frame = None
                 self._pending_frame = None
             if dev:
@@ -771,6 +822,7 @@ class USBOut:
                     with self._lock:
                         if self.dev is dev:
                             self.dev = None
+                            self.backend = None
                         self.last_frame = None
                         self._pending_frame = None
                         self._open_blocked_until = _now_ms() + USB_RETRY_MS
@@ -805,13 +857,14 @@ def _pad512(frame):
 
 def send_dmx(frame):
     # ARTNET
-    if output_mode in ("artnet", "both"):
+    if artnet_enabled:
         _send_artnet_live(frame)
 
     # USB
-    if output_mode in ("usb", "both"):
-        frame512 = _pad512(list(frame))
-        _usb.send_if_changed(frame512)
+    if usb_backend == "none":
+        return
+    frame512 = _pad512(list(frame))
+    _usb.send_if_changed(frame512)
 
 # ----------------- State voor scenes -----------------
 editor_preview_on = False
@@ -1277,59 +1330,6 @@ def _handle_pending_events():
             pass
 
 # ---------- Admin & menus ----------
-def _ask_universe_with_focus(parent, initial_value):
-    win = tk.Toplevel(parent)
-    win.title("Universe")
-    _set_window_icon(win)
-    win.resizable(False, False)
-    win.transient(parent); win.grab_set()
-
-    frm = tk.Frame(win, padx=16, pady=16); frm.pack(fill="both", expand=True)
-    tk.Label(frm, text="Enter Universe:", anchor="center", justify="center").pack(pady=(0, 8))
-    var = tk.StringVar(value=str(initial_value))
-    ent = tk.Entry(frm, textvariable=var, width=10, justify="center"); ent.pack(pady=(0, 8))
-    ok = tk.Button(frm, text="OK", width=10); ok.pack(pady=(6, 0))
-
-    result = {"val": None}
-    def _close_ok(*_):
-        s = var.get().strip()
-        if s.isdigit():
-            result["val"] = int(s)
-            try: win.grab_release()
-            except Exception: pass
-            win.destroy()
-        else:
-            messagebox.showwarning("Universe", "Please enter a valid integer.", parent=win)
-            try: ent.focus_set(); ent.selection_range(0, "end")
-            except Exception: pass
-
-    ok.config(command=_close_ok)
-    win.bind("<Return>", _close_ok)
-
-    parent.update_idletasks()
-    try:
-        px,py = parent.winfo_rootx(), parent.winfo_rooty()
-        pw,ph = parent.winfo_width(), parent.winfo_height()
-        ww,wh = 240, 140
-        x = px + (pw - ww)//2; y = py + (ph - wh)//2
-        win.geometry(f"{ww}x{wh}+{max(0,x)}+{max(0,y)}")
-    except Exception: pass
-
-    win.after(10, lambda: (ent.focus_set(), ent.selection_range(0, "end")))
-    win.wait_window()
-    return result["val"]
-
-def open_artnet_node_settings():
-    global node_ip, universe
-    new_ip = _ask_text("Node IP", "Enter Art-Net node IP:", initialvalue=node_ip, parent=root)
-    if new_ip is not None and new_ip.strip():
-        node_ip = new_ip.strip()
-    new_uni = _ask_universe_with_focus(root, universe)
-    if new_uni is not None:
-        universe = int(new_uni)
-    _update_artnet()
-    save_settings()
-
 def toggle_admin_mode():
     global adm_permission
     adm_permission = "1" if adm_permission == "0" else "0"
@@ -1562,11 +1562,6 @@ def show_about():
                      font=("Arial", 10, "underline"), fg="blue", cursor="hand2")
     link1.pack()
     link1.bind("<Button-1>", lambda e: open_url("https://github.com/cpvalente/stupidArtnet"))
-    tk.Label(wrap, text="Icon by:", font=("Arial", 10)).pack(pady=(10, 0))
-    link2 = tk.Label(wrap, text="Vecteezy", font=("Arial", 10, "underline"),
-                     fg="blue", cursor="hand2")
-    link2.pack()
-    link2.bind("<Button-1>", lambda e: open_url("https://www.vecteezy.com/free-vector/slider-icon"))
     tk.Label(wrap,
              text="Art-Net™ Designed by and Copyright Artistic Licence Engineering Ltd",
              font=("Arial", 10), wraplength=420, justify="center").pack(pady=(10, 0))
@@ -1589,17 +1584,51 @@ def show_about():
     win.bind("<Return>", lambda e: (win.grab_release(), win.destroy()))
     win.after(10, btn.focus_set)
 
-def _apply_output_mode(new_mode: str):
+def _apply_usb_backend(new_backend: str):
     """Direct toepassen bij radiobutton click."""
-    global output_mode
-    if new_mode == output_mode:
+    global usb_backend
+    if new_backend not in ("none", "udmx", "opendmx") or new_backend == usb_backend:
         return
-    output_mode = new_mode
-    if output_mode in ("usb", "both"):
+    usb_backend = new_backend
+    _usb.close()
+    if usb_backend != "none":
         _usb.ensure_open(root=root, verbose=False, force=True)
-    else:
-        _usb.close()
     save_settings()
+
+def _apply_artnet_enabled(enabled: bool):
+    global artnet_enabled
+    artnet_enabled = bool(enabled)
+    save_settings()
+
+def _is_valid_ipv4(value: str):
+    parts = value.strip().split(".")
+    if len(parts) != 4:
+        return False
+    for part in parts:
+        if not part.isdigit():
+            return False
+        if not 0 <= int(part) <= 255:
+            return False
+    return True
+
+def _apply_artnet_settings(new_ip: str, new_universe: str):
+    global node_ip, universe
+    ip = new_ip.strip()
+    if not _is_valid_ipv4(ip):
+        return False
+    try:
+        uni = int(str(new_universe).strip())
+    except Exception:
+        return False
+    if not 0 <= uni <= 32767:
+        return False
+    if ip == node_ip and uni == universe:
+        return True
+    node_ip = ip
+    universe = uni
+    _update_artnet()
+    save_settings()
+    return True
 
 def update_menubar():
     global menubar, filemenu
@@ -1614,7 +1643,6 @@ def update_menubar():
         filemenu.add_command(label="Export Show", command=export_show)
         filemenu.add_command(label="Delete Show", command=delete_current_show)
         filemenu.add_separator()
-        filemenu.add_command(label="Art-Net Settings", command=open_artnet_node_settings)
         filemenu.add_command(label="Output Settings", command=open_output_settings)
         # Performance niet meer in menu; hotkey-only
         menubar.add_cascade(label="File", menu=filemenu)
@@ -1642,29 +1670,96 @@ def open_output_settings():
 
     frm = ttk.Frame(d, padding=12); frm.pack(fill="both", expand=True)
 
-    ttk.Label(frm, text="Outputs").grid(row=0, column=0, columnspan=3, sticky="w", pady=(0,8))
+    ttk.Label(frm, text="USB output").grid(row=0, column=0, columnspan=3, sticky="w", pady=(0,8))
 
-    mode_var = tk.StringVar(value=output_mode)
-    def _on_mode():
-        _apply_output_mode(mode_var.get())
+    usb_var = tk.StringVar(value=usb_backend)
+    artnet_var = tk.BooleanVar(value=artnet_enabled)
+    artnet_ip_var = tk.StringVar(value=node_ip)
+    artnet_uni_var = tk.StringVar(value=str(universe))
+    artnet_apply_job = {"id": None}
 
-    rb1 = ttk.Radiobutton(frm, text="Art-Net only",     value="artnet", variable=mode_var, command=_on_mode)
-    rb2 = ttk.Radiobutton(frm, text="USB (uDMX) only",  value="usb",    variable=mode_var, command=_on_mode)
-    rb3 = ttk.Radiobutton(frm, text="Art-Net + USB",    value="both",   variable=mode_var, command=_on_mode)
-    rb1.grid(row=1, column=0, sticky="w")
-    rb2.grid(row=2, column=0, sticky="w")
-    rb3.grid(row=3, column=0, sticky="w")
+    def _on_usb_backend():
+        _apply_usb_backend(usb_var.get())
 
-    # Status: alleen mode + USB connected state
+    rb0 = ttk.Radiobutton(frm, text="None",     value="none",    variable=usb_var, command=_on_usb_backend)
+    rb1 = ttk.Radiobutton(frm, text="uDMX",     value="udmx",    variable=usb_var, command=_on_usb_backend)
+    rb2 = ttk.Radiobutton(frm, text="Open DMX", value="opendmx", variable=usb_var, command=_on_usb_backend)
+    rb0.grid(row=1, column=0, sticky="w")
+    rb1.grid(row=2, column=0, sticky="w")
+    rb2.grid(row=3, column=0, sticky="w")
+
+    artnet_row = ttk.Frame(frm)
+    artnet_row.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(10,0))
+    artnet_row.columnconfigure(2, weight=1)
+    artnet_row.columnconfigure(3, weight=0)
+
+    artnet_cb = ttk.Checkbutton(artnet_row, text="Enable Art-Net", variable=artnet_var)
+    artnet_cb.grid(row=0, column=0, sticky="w", padx=(0, 14))
+    artnet_ip_label = ttk.Label(artnet_row, text="IP")
+    artnet_ip_label.grid(row=0, column=1, sticky="e", padx=(0, 6))
+    ip_validate = (d.register(lambda value: len(value) <= 15 and all(ch.isdigit() or ch == "." for ch in value)), "%P")
+    artnet_ip_entry = ttk.Entry(
+        artnet_row,
+        textvariable=artnet_ip_var,
+        width=18,
+        validate="key",
+        validatecommand=ip_validate,
+    )
+    artnet_ip_entry.grid(row=0, column=2, sticky="w", padx=(0, 14))
+    artnet_uni_label = ttk.Label(artnet_row, text="Universe")
+    artnet_uni_label.grid(row=0, column=3, sticky="e", padx=(0, 6))
+    universe_values = [str(i) for i in range(16)]
+    if str(universe) not in universe_values:
+        universe_values.append(str(universe))
+    artnet_uni_box = ttk.Combobox(
+        artnet_row,
+        textvariable=artnet_uni_var,
+        values=universe_values,
+        state="readonly",
+        width=7,
+    )
+    artnet_uni_box.grid(row=0, column=4, sticky="w")
+
+    def _set_artnet_controls_state():
+        state = "normal" if artnet_var.get() else "disabled"
+        artnet_ip_label.config(state=state)
+        artnet_ip_entry.config(state=state)
+        artnet_uni_label.config(state=state)
+        artnet_uni_box.config(state="readonly" if artnet_var.get() else "disabled")
+
+    def _apply_artnet_fields():
+        artnet_apply_job["id"] = None
+        return _apply_artnet_settings(artnet_ip_var.get(), artnet_uni_var.get())
+
+    def _schedule_artnet_apply(*_):
+        if artnet_apply_job["id"] is not None:
+            try: d.after_cancel(artnet_apply_job["id"])
+            except Exception: pass
+        artnet_apply_job["id"] = d.after(350, _apply_artnet_fields)
+
+    def _on_artnet():
+        _apply_artnet_enabled(artnet_var.get())
+        _set_artnet_controls_state()
+        if artnet_var.get():
+            _apply_artnet_fields()
+
+    artnet_cb.config(command=_on_artnet)
+    artnet_ip_var.trace_add("write", _schedule_artnet_apply)
+    artnet_ip_entry.bind("<Return>", lambda _e: _apply_artnet_fields())
+    artnet_ip_entry.bind("<FocusOut>", lambda _e: _apply_artnet_fields())
+    artnet_uni_box.bind("<<ComboboxSelected>>", lambda _e: _apply_artnet_fields())
+    _set_artnet_controls_state()
+
+    # Status: USB backend, Art-Net toggle en connected state
     status_lbl = ttk.Label(frm, text="—")
-    status_lbl.grid(row=4, column=0, columnspan=3, sticky="w", pady=(10,0))
+    status_lbl.grid(row=5, column=0, columnspan=3, sticky="w", pady=(10,0))
 
     # Alleen Close-knop
-    btn_row = ttk.Frame(frm); btn_row.grid(row=5, column=0, columnspan=3, sticky="e", pady=(12,0))
+    btn_row = ttk.Frame(frm); btn_row.grid(row=6, column=0, columnspan=3, sticky="e", pady=(12,0))
     guide_btn = tk.Button(
         btn_row,
-        text="Install uDMX dongle",
-        command=lambda: open_path(udmx_driver_guide_file, "Install uDMX dongle"),
+        text="Install USB dongle",
+        command=lambda: open_path(usb_driver_guide_file, "Install USB dongle"),
     )
     guide_btn.pack(side="left", padx=(0, 8))
     close_btn = tk.Button(btn_row, text="Close", width=10, command=lambda: (d.grab_release(), d.destroy()))
@@ -1679,12 +1774,20 @@ def open_output_settings():
         if not _status_ctx["alive"]:
             return
         artnet_status = "Art-Net: ready" if ARTNET_AVAILABLE else "Art-Net: unavailable"
-        s = f"Mode: {mode_var.get()} | {artnet_status} | {_usb.status_text()}"
+        artnet_mode = "enabled" if artnet_var.get() else "disabled"
+        artnet_target = f"{artnet_ip_var.get().strip()} / universe {artnet_uni_var.get()}"
+        if artnet_var.get() and not _is_valid_ipv4(artnet_ip_var.get()):
+            artnet_target = "invalid IP"
+        s = f"USB: {_usb_backend_label(usb_var.get())} | Art-Net: {artnet_mode}, {artnet_status}, {artnet_target} | {_usb.status_text()}"
         status_lbl.config(text=s)
         d.after(STATUS_REFRESH_MS, _tick_status)
 
     def _on_close():
         _status_ctx["alive"] = False
+        if artnet_apply_job["id"] is not None:
+            try: d.after_cancel(artnet_apply_job["id"])
+            except Exception: pass
+            _apply_artnet_fields()
         try: d.grab_release()
         except Exception: pass
         d.destroy()
@@ -1694,7 +1797,7 @@ def open_output_settings():
     try:
         px,py = root.winfo_rootx(), root.winfo_rooty()
         pw,ph = root.winfo_width(), root.winfo_height()
-        ww = max(440, d.winfo_width()); wh = max(190, d.winfo_height())
+        ww = max(720, d.winfo_width()); wh = max(250, d.winfo_height())
         x = px + (pw - ww)//2; y = py + (ph - wh)//2
         d.geometry(f"{ww}x{wh}+{max(0,x)}+{max(0,y)}")
     except Exception: pass
@@ -1753,7 +1856,8 @@ def open_performance_dialog():
             f"USB status: {_usb.status_text()}",
             f"Chunks per frame: {chunks}",
             f"Measured USB: ~{fps_m:.1f} fps, {bps_m} B/s",
-            f"Current output mode: {output_mode}",
+            f"Current USB output: {_usb_backend_label(usb_backend)}",
+            f"Art-Net enabled: {'yes' if artnet_enabled else 'no'}",
         ]
         info.config(text="\n".join(lines))
         d.after(500, _update_info)
@@ -2391,10 +2495,10 @@ def main():
         except Exception: pass
     root.bind_all("<Alt-Shift-p>", lambda e: open_performance_dialog())
 
-    # USB opstart alleen als mode dit vereist
-    if output_mode in ("usb", "both"):
+    # USB opstart
+    if usb_backend != "none":
         _usb.ensure_open(root=root, verbose=False, force=True)
-    if output_mode in ("artnet", "both") and not ARTNET_AVAILABLE:
+    if artnet_enabled and not ARTNET_AVAILABLE:
         messagebox.showerror(
             "Art-Net",
             f"StupidArtnet could not be loaded.\nArt-Net output is disabled.\n\n{ARTNET_IMPORT_ERROR}",
@@ -2410,7 +2514,7 @@ def main():
             _handle_pending_events()
             _check_audio_detector_health()
             # probeer periodiek te openen met backoff (ipv bij elke send)
-            if output_mode in ("usb","both"):
+            if usb_backend != "none":
                 _usb.ensure_open(root=root, verbose=False)
             render_and_send()
         finally:
@@ -2425,10 +2529,10 @@ def main():
             if detector: detector.stop()
         except Exception: pass
         try:
-            if output_mode in ("usb","both"): _usb.blackout()
+            _usb.blackout()
         except Exception: pass
         try:
-            if output_mode in ("usb","both"): _usb.close()
+            _usb.close()
         except Exception: pass
         root.destroy()
 

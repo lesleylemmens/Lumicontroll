@@ -31,9 +31,16 @@ Author: cpvalente
 License: MIT License
 Source code: https://github.com/cpvalente/stupidArtnet
 
+pyftdi
+------
+Name: pyftdi
+License: BSD-3-Clause
+Source code: https://github.com/eblot/pyftdi
+
 License texts
 -------------
 See:
 - Zadig-GPL-3.0.txt
 - libwdi-LGPL-3.0.txt
 - stupidArtnet-MIT.txt
+- pyftdi-BSD-3-Clause.txt

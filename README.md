@@ -1,8 +1,8 @@
 # LumiControLL
 
-LumiControLL is a Windows lighting control application for Art-Net and uDMX output.
+LumiControLL is a Windows lighting control application for Art-Net and USB DMX output.
 
-It is designed for simple live control of DMX lights, with support for show pages, chases, audio-triggered playback, Art-Net output, and uDMX USB dongles.
+It is designed for simple live control of DMX lights, with support for show pages, chases, audio-triggered playback, Art-Net output, uDMX dongles, and Open DMX FTDI dongles/clones.
 
 ## Download
 
@@ -20,8 +20,9 @@ lumicontroll setup.exe
 
 1. Install LumiControLL with `lumicontroll setup.exe`.
 2. Start LumiControLL from the desktop shortcut or Start Menu.
-3. Use **Output Settings** to choose Art-Net, USB (uDMX), or both.
-4. For uDMX dongles, use the included Zadig guide from **Output Settings > Install uDMX dongle**.
+3. Use **Output Settings** to choose the USB DMX backend: None, uDMX, or Open DMX.
+4. Enable Art-Net in **Output Settings** if you want Art-Net output.
+5. For USB dongles, use the included Zadig guide from **Output Settings > Install USB dongle**.
 
 ## Locked Mode And Admin Mode
 
@@ -45,17 +46,17 @@ During uninstall, the uninstaller asks whether this user data should also be rem
 
 When running from source, runtime data is stored next to `app.py` for easier development.
 
-## uDMX Driver Setup
+## USB DMX Driver Setup
 
 The installer includes `zadig-2.9.exe` in the LumiControLL program folder.
 
-If LumiControLL cannot open a uDMX dongle, install a suitable USB driver with Zadig. The included Dutch guide explains the steps:
+If LumiControLL cannot open a uDMX or Open DMX dongle, install a suitable USB driver with Zadig. The included guide explains the steps:
 
 ```text
-docs/uDMX_Zadig_driver_installatie_NL.txt
+docs/USB_DMX_Zadig_driver_installation_EN.txt
 ```
 
-Recommended first driver choice for uDMX is `libusbK`. If that does not work, try `WinUSB` or `libusb-win32`.
+Recommended first driver choice for uDMX is `libusbK`. For Open DMX / FTDI clones, start with `libusb-win32`.
 
 ## Building From Source
 

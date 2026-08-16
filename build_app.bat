@@ -45,6 +45,17 @@ if errorlevel 1 (
     )
 )
 
+python -c "import pyftdi" >nul 2>&1
+if errorlevel 1 (
+    echo pyftdi ontbreekt. Installeren...
+    python -m pip install pyftdi
+    if errorlevel 1 (
+        echo pyftdi installeren is mislukt.
+        pause
+        exit /b 1
+    )
+)
+
 if exist "%BUILD_DIR%" rmdir /s /q "%BUILD_DIR%"
 if exist "%DIST_DIR%" rmdir /s /q "%DIST_DIR%"
 if exist "%SPEC_FILE%" del /q "%SPEC_FILE%"
@@ -59,6 +70,9 @@ python -m PyInstaller ^
     --icon "an.ico" ^
     --add-binary "libusb-1.0.dll;." ^
     --hidden-import "usb.backend.libusb1" ^
+    --hidden-import "pyftdi" ^
+    --hidden-import "pyftdi.ftdi" ^
+    --hidden-import "pyftdi.usbtools" ^
     --hidden-import "pyudmx" ^
     --hidden-import "stupidArtnet" ^
     --hidden-import "keyboard" ^
