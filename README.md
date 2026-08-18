@@ -59,13 +59,15 @@ docs/USB_DMX_Zadig_driver_installation_EN.txt
 Recommended first driver choice for uDMX is `libusbK`. For Open DMX / FTDI clones, LumiControLL supports two driver routes:
 
 - Zadig/libusb route: install `libusb-win32`, `libusbK`, or `WinUSB` on the FTDI/Open DMX device. LumiControLL uses `pyftdi` for this route.
-- FTDI VCP/COM route: install the official FTDI driver so Windows shows the adapter as a `USB Serial Port (COMx)`. LumiControLL can auto-detect FTDI COM ports and uses a DMX-compatible baud-rate break for USB-RS485 Open DMX clones.
+- FTDI VCP/COM route: install the official FTDI driver so Windows shows the adapter as a `USB Serial Port (COMx)`. LumiControLL can auto-detect FTDI COM ports.
 
 Official FTDI drivers are available here:
 
 [FTDI D2XX/VCP drivers](https://ftdichip.com/drivers/d2xx-drivers/)
 
-If multiple FTDI devices are connected, set `LUMICONTROLL_OPENDMX_PORT` to the desired COM port, for example `COM11`. You can force a specific route with `LUMICONTROLL_OPENDMX_MODE=libusb` or `LUMICONTROLL_OPENDMX_MODE=com`.
+The default Open DMX break mode is `serialbreak`, which is the standard choice for original ENTTEC Open DMX interfaces. Some USB-RS485 FTDI clones with automatic direction control need the `baudzero` workaround instead. This can be selected in **Output Settings > Open DMX break**.
+
+If multiple FTDI devices are connected, set `LUMICONTROLL_OPENDMX_PORT` to the desired COM port, for example `COM11`. You can force a specific route with `LUMICONTROLL_OPENDMX_MODE=libusb` or `LUMICONTROLL_OPENDMX_MODE=com`, and force a break mode with `LUMICONTROLL_OPENDMX_BREAK=serialbreak` or `LUMICONTROLL_OPENDMX_BREAK=baudzero`.
 
 ## Building From Source
 

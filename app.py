@@ -132,6 +132,7 @@ default_settings = {
     "bpm": 120,
     "output_mode": "none",         # derived from usb_backend and artnet_enabled
     "usb_backend": "none",         # "none" | "udmx" | "opendmx"
+    "opendmx_break_mode": "serialbreak",  # "serialbreak" | "baudzero"
     "artnet_enabled": False,
     # performance
     "playback_tick_ms": DEFAULT_TICK_MS,
@@ -311,6 +312,9 @@ bpm           = _read_int_setting("bpm", 120, 1, 400)
 usb_backend = str(_read_setting("usb_backend", "none")).lower()
 if usb_backend not in ("none", "udmx", "opendmx"):
     usb_backend = "none"
+opendmx_break_mode = str(_read_setting("opendmx_break_mode", "serialbreak")).lower()
+if opendmx_break_mode not in ("serialbreak", "baudzero"):
+    opendmx_break_mode = "serialbreak"
 artnet_enabled = _read_bool_setting("artnet_enabled", False)
 
 def _current_output_mode():
@@ -348,6 +352,7 @@ def save_settings():
         "bpm": bpm,
         "output_mode": output_mode,
         "usb_backend": usb_backend,
+        "opendmx_break_mode": opendmx_break_mode,
         "artnet_enabled": bool(artnet_enabled),
         "playback_tick_ms": int(PLAYBACK_TICK_MS),
         "usb_fps": usb_fps,
@@ -703,7 +708,7 @@ class USBOut:
 
     def _make_device(self, backend):
         if backend == "opendmx":
-            return OpenDMX().open()
+            return OpenDMX(break_mode=opendmx_break_mode).open()
         return UDMX().open()
 
     def ensure_open(self, root=None, verbose=False, force=False):
@@ -1595,6 +1600,16 @@ def _apply_usb_backend(new_backend: str):
         _usb.ensure_open(root=root, verbose=False, force=True)
     save_settings()
 
+def _apply_opendmx_break_mode(new_mode: str):
+    global opendmx_break_mode
+    if new_mode not in ("serialbreak", "baudzero") or new_mode == opendmx_break_mode:
+        return
+    opendmx_break_mode = new_mode
+    if usb_backend == "opendmx":
+        _usb.close()
+        _usb.ensure_open(root=root, verbose=False, force=True)
+    save_settings()
+
 def _apply_artnet_enabled(enabled: bool):
     global artnet_enabled
     artnet_enabled = bool(enabled)
@@ -1673,6 +1688,7 @@ def open_output_settings():
     ttk.Label(frm, text="USB output").grid(row=0, column=0, columnspan=3, sticky="w", pady=(0,8))
 
     usb_var = tk.StringVar(value=usb_backend)
+    opendmx_break_var = tk.StringVar(value=opendmx_break_mode)
     artnet_var = tk.BooleanVar(value=artnet_enabled)
     artnet_ip_var = tk.StringVar(value=node_ip)
     artnet_uni_var = tk.StringVar(value=str(universe))
@@ -1688,8 +1704,25 @@ def open_output_settings():
     rb1.grid(row=2, column=0, sticky="w")
     rb2.grid(row=3, column=0, sticky="w")
 
+    break_row = ttk.Frame(frm)
+    break_row.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(8,0))
+    ttk.Label(break_row, text="Open DMX break").pack(side="left", padx=(0, 8))
+    break_box = ttk.Combobox(
+        break_row,
+        textvariable=opendmx_break_var,
+        values=("serialbreak", "baudzero"),
+        state="readonly",
+        width=14,
+    )
+    break_box.pack(side="left")
+
+    def _on_opendmx_break(_event=None):
+        _apply_opendmx_break_mode(opendmx_break_var.get())
+
+    break_box.bind("<<ComboboxSelected>>", _on_opendmx_break)
+
     artnet_row = ttk.Frame(frm)
-    artnet_row.grid(row=4, column=0, columnspan=3, sticky="ew", pady=(10,0))
+    artnet_row.grid(row=5, column=0, columnspan=3, sticky="ew", pady=(10,0))
     artnet_row.columnconfigure(2, weight=1)
     artnet_row.columnconfigure(3, weight=0)
 
@@ -1752,10 +1785,10 @@ def open_output_settings():
 
     # Status: USB backend, Art-Net toggle en connected state
     status_lbl = ttk.Label(frm, text="—")
-    status_lbl.grid(row=5, column=0, columnspan=3, sticky="w", pady=(10,0))
+    status_lbl.grid(row=6, column=0, columnspan=3, sticky="w", pady=(10,0))
 
     # Alleen Close-knop
-    btn_row = ttk.Frame(frm); btn_row.grid(row=6, column=0, columnspan=3, sticky="e", pady=(12,0))
+    btn_row = ttk.Frame(frm); btn_row.grid(row=7, column=0, columnspan=3, sticky="e", pady=(12,0))
     guide_btn = tk.Button(
         btn_row,
         text="Install USB dongle",

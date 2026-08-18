@@ -1,5 +1,5 @@
-Installing USB DMX Drivers With Zadig
-=====================================
+Installing USB DMX Drivers
+==========================
 
 Use this guide only when LumiControLL cannot open your USB DMX dongle.
 Be careful to select only the DMX dongle in Zadig.
@@ -12,8 +12,8 @@ Important
 - Close other DMX software before using the dongle. Most USB DMX dongles can
   only be opened by one application at a time.
 
-Opening Zadig
--------------
+Zadig / libusb Route
+--------------------
 1. Connect the DMX dongle to the computer.
 2. Start zadig-2.9.exe as administrator.
    After a normal installation, Zadig is located here:
@@ -44,8 +44,13 @@ If uDMX does not open:
 Open DMX / FTDI Clones
 ----------------------
 This route is for ENTTEC Open DMX USB and FTDI-based clones.
-LumiControLL uses pyftdi through libusb for this backend, so the dongle does
-not need to be available as a COM port.
+LumiControLL can use either pyftdi through libusb, or the official FTDI driver
+through a Windows COM port.
+
+Option A: Zadig / libusb
+------------------------
+Use this option when you want LumiControLL to open the FTDI device directly
+through libusb. The dongle does not need to be available as a COM port.
 
 1. In Zadig, select the FTDI/Open DMX device.
    It may be named USB Serial Converter, FT232R USB UART, Open DMX USB,
@@ -56,12 +61,36 @@ not need to be available as a COM port.
 5. Unplug the Open DMX dongle and plug it in again.
 6. Start LumiControLL and choose Output Settings > Open DMX.
 
+Option B: Official FTDI Driver / COM Port
+-----------------------------------------
+Use this option when you want Windows to show the adapter as a USB Serial Port
+such as COM11. This is useful for original FTDI adapters, ENTTEC Open DMX style
+interfaces, and some USB-RS485 FTDI clones.
+
+1. Install the official FTDI driver:
+
+   https://ftdichip.com/drivers/d2xx-drivers/
+
+2. Unplug the Open DMX dongle and plug it in again.
+3. Open Windows Device Manager.
+4. Check that the dongle appears under Ports as USB Serial Port (COMx).
+5. Start LumiControLL and choose Output Settings > Open DMX.
+
+Open DMX Break Mode
+-------------------
+The default Open DMX break mode is serialbreak. This is the standard choice for
+original ENTTEC Open DMX interfaces.
+
+Some USB-RS485 FTDI clones with automatic direction control do not pass the
+normal serial break reliably. If the interface opens and its TX LED flashes but
+the lamp does not respond, try Output Settings > Open DMX break > baudzero.
+
 If Open DMX does not open:
 - Check that you selected the FTDI/Open DMX device, not Interface 0 of another
   USB device.
 - Try WinUSB or libusbK as an alternative driver.
-- If another application needs the dongle as a COM port, you may need to
-  restore the FTDI driver later through Device Manager or Zadig.
+- If another application needs the dongle as a COM port, use the official FTDI
+  driver route instead of Zadig/libusb.
 - Some clones do not use an FTDI chip or behave differently; those may not
   work with this Open DMX backend.
 

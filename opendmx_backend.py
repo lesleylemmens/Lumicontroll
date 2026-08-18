@@ -19,7 +19,8 @@ DMX_BAUDRATE = 250000
 BREAK_SECONDS = 0.00012
 MAB_SECONDS = 0.000012
 BREAK_BAUDRATE = 57600
-BREAK_MODE = os.environ.get("LUMICONTROLL_OPENDMX_BREAK", "baudzero").lower()
+DEFAULT_BREAK_MODE = "serialbreak"
+BREAK_MODES = ("serialbreak", "baudzero")
 
 
 class OpenDMX:
@@ -30,13 +31,21 @@ class OpenDMX:
     automatic direction control does not pass SerialPort break reliably.
     """
 
-    def __init__(self, url: Optional[str] = None, port: Optional[str] = None):
+    def __init__(
+        self,
+        url: Optional[str] = None,
+        port: Optional[str] = None,
+        break_mode: Optional[str] = None,
+    ):
         env_url = os.environ.get("LUMICONTROLL_OPENDMX_URL")
         env_port = os.environ.get("LUMICONTROLL_OPENDMX_PORT")
         env_mode = os.environ.get("LUMICONTROLL_OPENDMX_MODE", "auto").lower()
+        env_break = os.environ.get("LUMICONTROLL_OPENDMX_BREAK", DEFAULT_BREAK_MODE).lower()
         self.url = url or env_url
         self.port = port or env_port
         self.mode = env_mode if env_mode in ("auto", "libusb", "com") else "auto"
+        selected_break = (break_mode or env_break or DEFAULT_BREAK_MODE).lower()
+        self.break_mode = selected_break if selected_break in BREAK_MODES else DEFAULT_BREAK_MODE
         self._candidate_urls = (self.url,) if self.url else DEFAULT_FTDI_URLS
         self.dev: Optional[Ftdi] = None
         self.serial: Optional[Serial] = None
@@ -136,7 +145,7 @@ class OpenDMX:
         self.port = port
         self.active_mode = "com"
         self._last_frame = None
-        print(f"[info] Open DMX geopend met {self.port} (FTDI COM, BaudZero break)")
+        print(f"[info] Open DMX geopend met {self.port} (FTDI COM, {self.break_mode} break)")
         return self
 
     def close(self):
@@ -178,7 +187,7 @@ class OpenDMX:
     def _send_libusb_frame(self, data: bytes):
         if not self.dev:
             return
-        if BREAK_MODE == "serialbreak":
+        if self.break_mode == "serialbreak":
             self.dev.set_break(True)
             time.sleep(BREAK_SECONDS)
             self.dev.set_break(False)
@@ -196,6 +205,14 @@ class OpenDMX:
     def _send_com_frame(self, data: bytes):
         if not self.serial:
             return
+        if self.break_mode == "serialbreak":
+            self.serial.break_condition = True
+            time.sleep(BREAK_SECONDS)
+            self.serial.break_condition = False
+            time.sleep(MAB_SECONDS)
+            self.serial.write(bytes([0]) + data)
+            return
+
         self.serial.baudrate = BREAK_BAUDRATE
         self.serial.write(b"\x00")
         self.serial.flush()
