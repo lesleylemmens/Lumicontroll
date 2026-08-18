@@ -4,6 +4,8 @@ LumiControLL is a Windows lighting control application for Art-Net and USB DMX o
 
 It is designed for simple live control of DMX lights, with support for show pages, chases, audio-triggered playback, Art-Net output, uDMX dongles, and Open DMX FTDI dongles/clones.
 
+![LumiControLL main window](screenshot.jpg)
+
 ## Download
 
 Download the latest installer from the GitHub Releases page:
