@@ -22,7 +22,7 @@ lumicontroll setup.exe
 2. Start LumiControLL from the desktop shortcut or Start Menu.
 3. Use **Output Settings** to choose the USB DMX backend: None, uDMX, or Open DMX.
 4. Enable Art-Net in **Output Settings** if you want Art-Net output.
-5. For USB dongles, use the included Zadig guide from **Output Settings > Install USB dongle**.
+5. For USB dongles, use the included Zadig guide from **Output Settings > Install USB dongle**, or use the FTDI VCP driver for Open DMX / FTDI clone adapters.
 
 ## Locked Mode And Admin Mode
 
@@ -56,7 +56,16 @@ If LumiControLL cannot open a uDMX or Open DMX dongle, install a suitable USB dr
 docs/USB_DMX_Zadig_driver_installation_EN.txt
 ```
 
-Recommended first driver choice for uDMX is `libusbK`. For Open DMX / FTDI clones, start with `libusb-win32`.
+Recommended first driver choice for uDMX is `libusbK`. For Open DMX / FTDI clones, LumiControLL supports two driver routes:
+
+- Zadig/libusb route: install `libusb-win32`, `libusbK`, or `WinUSB` on the FTDI/Open DMX device. LumiControLL uses `pyftdi` for this route.
+- FTDI VCP/COM route: install the official FTDI driver so Windows shows the adapter as a `USB Serial Port (COMx)`. LumiControLL can auto-detect FTDI COM ports and uses a DMX-compatible baud-rate break for USB-RS485 Open DMX clones.
+
+Official FTDI drivers are available here:
+
+[FTDI D2XX/VCP drivers](https://ftdichip.com/drivers/d2xx-drivers/)
+
+If multiple FTDI devices are connected, set `LUMICONTROLL_OPENDMX_PORT` to the desired COM port, for example `COM11`. You can force a specific route with `LUMICONTROLL_OPENDMX_MODE=libusb` or `LUMICONTROLL_OPENDMX_MODE=com`.
 
 ## Building From Source
 

@@ -56,6 +56,17 @@ if errorlevel 1 (
     )
 )
 
+python -c "import serial" >nul 2>&1
+if errorlevel 1 (
+    echo pyserial ontbreekt. Installeren...
+    python -m pip install pyserial
+    if errorlevel 1 (
+        echo pyserial installeren is mislukt.
+        pause
+        exit /b 1
+    )
+)
+
 if exist "%BUILD_DIR%" rmdir /s /q "%BUILD_DIR%"
 if exist "%DIST_DIR%" rmdir /s /q "%DIST_DIR%"
 if exist "%SPEC_FILE%" del /q "%SPEC_FILE%"
@@ -73,6 +84,8 @@ python -m PyInstaller ^
     --hidden-import "pyftdi" ^
     --hidden-import "pyftdi.ftdi" ^
     --hidden-import "pyftdi.usbtools" ^
+    --hidden-import "serial" ^
+    --hidden-import "serial.tools.list_ports" ^
     --hidden-import "pyudmx" ^
     --hidden-import "stupidArtnet" ^
     --hidden-import "keyboard" ^

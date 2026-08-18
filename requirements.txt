@@ -4,6 +4,7 @@ numpy
 pyaudiowpatch
 pyinstaller
 pyftdi
+pyserial
 pyudmx
 pyusb
 scipy
