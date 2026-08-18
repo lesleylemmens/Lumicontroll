@@ -28,13 +28,12 @@ lumicontroll setup.exe
 
 ## Locked Mode And Admin Mode
 
-Use this shortcut to toggle admin mode:
-
-```text
-Alt + Shift + S
-```
-
-Admin mode enables editing features such as show management, output settings, page/block editing, and the Art-Net viewer menu.
+> [!CAUTION]
+> LumiControLL starts in locked mode. To edit shows, output settings, pages, blocks, or use the Art-Net viewer menu, enable admin mode with:
+>
+> ```text
+> Alt + Shift + S
+> ```
 
 ## User Data
 
@@ -68,8 +67,6 @@ Official FTDI drivers are available here:
 [FTDI D2XX/VCP drivers](https://ftdichip.com/drivers/d2xx-drivers/)
 
 The default Open DMX break mode is `serialbreak`, which is the standard choice for original ENTTEC Open DMX interfaces. Some USB-RS485 FTDI clones with automatic direction control need the `baudzero` workaround instead. This can be selected in **Output Settings > Open DMX break**.
-
-If multiple FTDI devices are connected, set `LUMICONTROLL_OPENDMX_PORT` to the desired COM port, for example `COM11`. You can force a specific route with `LUMICONTROLL_OPENDMX_MODE=libusb` or `LUMICONTROLL_OPENDMX_MODE=com`, and force a break mode with `LUMICONTROLL_OPENDMX_BREAK=serialbreak` or `LUMICONTROLL_OPENDMX_BREAK=baudzero`.
 
 ## Building From Source
 
